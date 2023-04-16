@@ -7,7 +7,18 @@ export default [
     {
         path: '/home',
         name: 'Home',
+        redirect: '/todo',
         component: () => import('@/pages/Home'),
+        children: [
+            {
+                path: '/todo',
+                component: () => import('@/pages/Todo'),
+            },
+            {
+                path: '/studyhome',
+                component: () => import('@/pages/studyHome'),
+            },
+        ]
     },
     {
         path: '/login',
@@ -19,5 +30,6 @@ export default [
         name: 'Register',
         component: () => import('@/pages/Register'),
     },
+
 ]
 

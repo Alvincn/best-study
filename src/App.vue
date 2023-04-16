@@ -15,6 +15,9 @@ export default {
 </script>
 
 <style>
+.el-popup-parent--hidden {
+  padding: 0 !important;
+}
 root {
   margin: 0;
   padding: 0;
@@ -22,10 +25,10 @@ root {
 }
 body {
   width: 100vw;
-  overflow: hidden;
+  height: 100vh;
   margin: 0;
   padding: 0;
-
+  overflow: hidden;
 }
 #app {
   width: 100%;

@@ -1,52 +1,44 @@
 <template>
   <div id="tabBar">
-<!--    顶部-->
+    <!--    顶部-->
     <el-container>
       <el-header style="background-color: rgba(177, 153, 152, 1)">
-        <div style="display: flex;height:100%;align-items: center">
-          <div style="display: flex;flex: 1;line-height: 50px">
-            <el-avatar :size="50" :src="userInfo.profileName"></el-avatar>
+        <div style="display: flex;height:100%;width:100%;justify-content: space-around;align-items: center">
+          <div style="display: flex;line-height: 50px">
             <span style="font-size:20px; color: white">&nbsp;&nbsp;{{ userInfo.username }}
             {{
-                new Date().getHours()>0 && new Date().getHours()<9?'早上好☀️！':
-                    new Date().getHours()<12?'中午好🌤️！':
-                        new Date().getHours()<18?'下午好🌧️！':'晚上好🌕！'
+                new Date().getHours() > 0 && new Date().getHours() < 9 ? '早上好☀️！' :
+                    new Date().getHours() < 12 ? '中午好🌤️！' :
+                        new Date().getHours() < 18 ? '下午好🌧️！' : '晚上好🌕！'
               }}
           </span>
           </div>
-          <span style="flex:1">{{dayWord.word}} --{{dayWord.fromWho?dayWord.fromWho:'佚名'}}</span>
-          <span style=""><el-link type="warning" style="color:white">退出登录</el-link></span>
+          <span
+              style="flex: 1;text-align: center">{{ dayWord.word }} --{{
+              dayWord.fromWho ? dayWord.fromWho : '佚名'
+            }}</span>
+          <span><el-link type="warning" style="color:white">退出登录</el-link></span>
         </div>
       </el-header>
-    </el-container>
-    <el-row class="tac">
-      <el-col :span="3" style="background-color: rgba(177, 153, 152,1);height: 100vh">
-        <div>
+      <el-container>
+        <el-aside width="220px" style="height: 100vh;background-color: rgba(177, 153, 152, 1);">
           <el-menu
-              style="background-color: rgba(177, 153, 152,1);"
-              default-active="1"
+              default-active="0"
+              style="background-color: rgba(177, 153, 152, 0);"
               class="el-menu-vertical-demo">
-            <el-menu-item index="1" style="">
-              <i class="iconfont icon-rili"></i>
-              <span slot="title">Todo</span>
-            </el-menu-item>
-            <el-menu-item index="2">
-              <i class="el-icon-menu"></i>
-              <span slot="title">自习室</span>
-            </el-menu-item>
-            <el-menu-item index="3">
-              <i class="el-icon-document"></i>
-              <span slot="title">许愿瓶</span>
-            </el-menu-item>
-            <el-menu-item index="4">
-              <i class="el-icon-setting"></i>
-              <span slot="title">我的</span>
+            <el-menu-item v-for="(item, i) in titleText" :index="'' + i" :key="i" @click="changeRouter(i)">
+              <i :class="item.icon"></i>
+              <span slot="title">{{ item.text }}</span>
             </el-menu-item>
           </el-menu>
-        </div>
-
-      </el-col>
-    </el-row>
+        </el-aside>
+        <el-container>
+          <el-main>
+            <router-view></router-view>
+          </el-main>
+        </el-container>
+      </el-container>
+    </el-container>
 
   </div>
 </template>
@@ -59,7 +51,14 @@ export default {
   props: ['userInfo'],
   data() {
     return {
-      dayWord:{}
+      dayWord: {},
+      currentIndex:0,
+      titleText: [
+        {text: 'Todo', icon: 'el-icon-notebook-2'},
+        {text: '自习室', icon: 'el-icon-notebook-2'},
+        {text: '许愿瓶', icon: 'el-icon-notebook-2'},
+        {text: '我的', icon: 'el-icon-notebook-2'}
+      ]
     }
   },
   mounted() {
@@ -75,12 +74,37 @@ export default {
     // 每日一句，温暖你我他
     async getDayWord() {
       let result = await axios.get("https://v1.hitokoto.cn/")
-      console.log(result.data)
-      this.dayWord = {fromWho:result.data.from_who,word:result.data.hitokoto}
-    }
+      this.dayWord = {fromWho: result.data.from_who, word: result.data.hitokoto}
+    },
+    // 路由跳转,更改页面
+    changeRouter(index) {
+      // 避免出现当前路由重复跳转导致报错
+      // 如果当前用户点击的标签等于当前标签，就返回不执行
+      if(this.currentIndex === index) return
+      this.currentIndex = index
+      switch (index) {
+        case 0:
+          this.$router.push({path: '/todo'})
+          break
+        case 1:
+          this.$router.push({path:'/studyhome'})
+      }
+    },
   }
 }
 </script>
 
 <style scoped lang="less">
+.el-main {
+  background-color: rgb(254, 248, 232);
+}
+
+.el-menu-item {
+  color: white;
+  font-size: 17px;
+}
+
+.el-menu-item.is-active {
+  color: rgb(252, 213, 63);
+}
 </style>
