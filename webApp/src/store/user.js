@@ -1,20 +1,28 @@
-import * as api from '@/api/index'
-api = api.default
+import api from '@/api/index'
 // 登录注册模块的仓库
 const state = {
-    token: window.localStorage.getItem('session') || '',
-    userInfo: {},
+    userInfo:{},
+    tasks:[]
 };
 const mutations = {
-    GETUSRE(state, userInfo) {
+    GET_USERINFO(state,userInfo) {
         state.userInfo = userInfo
+    },
+    ALLTASK(state,tasks) {
+        state.tasks = tasks
     }
 };
 const actions = {
-    async getUser({ commit }, session) {
-        let result = await api.getUser(session)
-        commit("GETUSRE",result)
+    async getUser({commit}) {
+        let result = await api.getUserInfo()
+        if (result.code === 200) {
+            commit("GET_USERINFO", result.data)
+        }
     },
+    async getAllTASK({commit}) {
+        let result = await api.getAllTask()
+        commit("ALLTASK",result.data)
+    }
 };
 const getters = {};
 // 文件模块

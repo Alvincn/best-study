@@ -7,9 +7,9 @@
           <div style="display: flex;line-height: 50px">
             <span style="font-size:20px; color: white">&nbsp;&nbsp;{{ userInfo.username }}
             {{
-                new Date().getHours() > 0 && new Date().getHours() < 9 ? '早上好☀️！' :
-                    new Date().getHours() < 12 ? '中午好🌤️！' :
-                        new Date().getHours() < 18 ? '下午好🌧️！' : '晚上好🌕！'
+                new Date().getHours() >= 0 && new Date().getHours() < 9 ? '早上好☀️！' :
+                    new Date().getHours() >= 9 && new Date().getHours() < 12 ? '中午好🌤️！' :
+                        new Date().getHours() >= 12 && new Date().getHours() < 18 ? '下午好🌧️！' : '晚上好🌕！'
               }}
           </span>
           </div>

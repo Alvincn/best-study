@@ -12,8 +12,8 @@
         <h1 style="text-align: center;font-size: 30px;color: white;line-height: 60px">用户登录</h1>
         <el-form style="width: 90%;" :model="userLogin" :rules="rules" ref="ruleForm" label-width="100px"
                  class="demo-ruleForm">
-          <el-form-item label="手机号" prop="phone">
-            <el-input placeholder="请输入11位手机号" v-model.number="userLogin.phone"></el-input>
+          <el-form-item label="邮箱" prop="email">
+            <el-input placeholder="请输入邮箱" v-model="userLogin.email"></el-input>
           </el-form-item>
           <el-form-item label="密码" prop="password">
             <el-input placeholder="请输入密码（包含大写、小写、数字）" type="password" v-model="userLogin.password"
@@ -29,11 +29,12 @@
     </transition>
     <!-- 这是注册状态 -->
     <transition name="el-fade-in-linear">
-      <div id="form1" v-show="isRegister"><h1 style="text-align: center;line-height: 60px;font-size: 30px;color: white">用户注册</h1>
+      <div id="form1" v-show="isRegister"><h1 style="text-align: center;line-height: 60px;font-size: 30px;color: white">
+        用户注册</h1>
         <el-form style="width: 90%;" :model="userRegister" :rules="rules" ref="ruleForm" label-width="100px"
                  class="demo-ruleForm">
-          <el-form-item label="昵称" prop="registerUsername">
-            <el-input placeholder="请输入昵称" v-model="userRegister.registerUsername"></el-input>
+          <el-form-item label="邮箱" prop="email">
+            <el-input placeholder="请输入邮箱" type="text" v-model="userRegister.email"></el-input>
           </el-form-item>
           <el-form-item label="密码" prop="registerPassword">
             <el-input placeholder="请输入密码（包含大写、小写、数字）" type="password" v-model="userRegister.registerPassword"
@@ -43,11 +44,9 @@
             <el-input placeholder="重新输入密码" type="password" v-model="userRegister.confirmPassword"
                       show-password></el-input>
           </el-form-item>
-          <el-form-item label="手机号" prop="phone">
-            <el-input placeholder="请输入11位手机号" type="text" v-model.number="userRegister.phone"></el-input>
-          </el-form-item>
-          <el-form-item label="手机验证码" prop="phoneCode">
-            <el-input type="text" placeholder="输入手机验证码" v-model.number="userRegister.phoneCode">
+
+          <el-form-item label="邮箱验证码" prop="emailCode">
+            <el-input type="text" placeholder="输入邮箱验证码" v-model.number="userRegister.emailCode">
               <template slot="append">
                 <el-button ref="getCodeButton" @click="getCode">获取验证码</el-button>
               </template>
@@ -67,20 +66,18 @@
 export default {
   name: 'Login',
   data() {
-    var checkPhone = (rule, value, callback) => {
+    var checkEmail = (rule, value, callback) => {
       if (!value) {
-        this.checked.phoneOk = false
-        return callback(new Error('手机号不能为空'));
+        this.checked.emailOk = false
+        return callback(new Error('邮箱不能为空'));
       }
-      if (isNaN(value * 1)) {
-        this.checked.phoneOk = false
-        return callback(new Error('手机号必须是数字'))
+      let eamilRule = /^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.(com|cn|net)$/
+      let result = eamilRule.test(value)
+      if (!result) {
+        this.checked.emailOk = false
+        return callback(new Error("请输入正确的邮箱"))
       }
-      if ((value + '').trim().length !== 11) {
-        this.checked.phoneOk = false
-        return callback(new Error('手机号应为11位'))
-      }
-      this.checked.phoneOk = true
+      this.checked.emailOk = true
     };
     var checkPassword = (rule, value, callback) => {
       if (value.trim() === '') {
@@ -98,13 +95,6 @@ export default {
       }
       this.checked.passwordOk = true
     };
-    var checkUserName = (rule, value, callback) => {
-      if (!value.trim()) {
-        this.checked.nickNameOk = false
-        return callback(new Error('昵称不能为空'))
-      }
-      this.checked.nickNameOk = true
-    };
     var confirmPassword = (rule, value, callback) => {
       if (!value.trim()) {
         this.checked.confPasswordOk = false
@@ -116,20 +106,20 @@ export default {
       }
       this.checked.confPasswordOk = true
     };
-    var phoneCode = (rule, value, callback) => {
+    var emailCode = (rule, value, callback) => {
       if (!value) {
-        this.checked.phoneCodeOk = false
+        this.checked.emailCodeOk = false
         return callback(new Error('验证码不能为空'))
       }
       if (isNaN(value * 1)) {
-        this.checked.phoneCodeOk = false
+        this.checked.emailCodeOk = false
         return callback(new Error('验证码必须是数字'))
       }
-      if ((value + '').trim().length !== 4) {
-        this.checked.phoneCodeOk = false
-        return callback(new Error('验证码应为4位'))
+      if ((value + '').trim().length !== 6) {
+        this.checked.emailCodeOk = false
+        return callback(new Error('验证码应为6位'))
       }
-      this.checked.phoneCodeOk = true
+      this.checked.emailCodeOk = true
     }
     return {
       isLogin: true,
@@ -138,7 +128,7 @@ export default {
       // 用户登录表单
       userLogin: {
         // 登录时用户名
-        phone: '',
+        email: '',
         // 登录密码
         password: '',
       },
@@ -150,23 +140,20 @@ export default {
         registerPassword: '',
         // 确认密码
         confirmPassword: '',
-        // 手机号
-        phone: '',
-        // 手机号
-        phoneCode: '',
-        // 正确的手机号验证码
+        // 邮箱
+        email: '',
+        // 邮箱验证码
+        emailCode: '',
+        // 正确的邮箱验证码
         trueCode: '',
       },
       //  规则表单
       rules: {
-        phone: [
-          {validator: checkPhone, trigger: 'blur'}
+        email: [
+          {validator: checkEmail, trigger: 'blur'}
         ],
         password: [
           {validator: checkPassword, trigger: 'blur'}
-        ],
-        registerUsername: [
-          {validator: checkUserName, trigger: 'blur'}
         ],
         registerPassword: [
           {validator: checkPassword, trigger: 'blur'}
@@ -174,17 +161,16 @@ export default {
         confirmPassword: [
           {validator: confirmPassword, trigger: 'blur'}
         ],
-        phoneCode: [
-          {validator: phoneCode, trigger: 'blur'}
+        emailCode: [
+          {validator: emailCode, trigger: 'blur'}
         ]
       },
       // 检查
       checked: {
-        nickNameOk: false,
         passwordOk: false,
         confPasswordOk: false,
-        phoneOk: false,
-        phoneCodeOk: false
+        emailOk: false,
+        emailCodeOk: false
       }
     };
   },
@@ -193,7 +179,7 @@ export default {
   methods: {
     // 登录注册切换
     changeRegister() {
-      if (this.isLogin == true) {
+      if (this.isLogin === true) {
         this.isLogin = false;
         this.isRegister = true;
       } else {
@@ -201,10 +187,10 @@ export default {
         this.isLogin = true;
       }
     },
-    // 获取手机验证码
+    // 获取邮箱验证码
     getCode(event) {
       let count = 60
-      if (!this.checked.phoneOk || !this.checked.passwordOk || !this.checked.nickNameOk || !this.checked.confPasswordOk) {
+      if (!this.checked.emailOk || !this.checked.passwordOk  || !this.checked.confPasswordOk) {
         return this.$message({
           message: "请完善信息再获取",
           type: 'warning'
@@ -220,8 +206,6 @@ export default {
         }
         if (count === 0) {
           event.target.innerHTML = `获取验证码`
-          console.log(event.target.innerHTML)
-
           event.target.removeAttribute('disabled')
           event.target.style.cursor = 'pointer'
           return clearInterval(timer)
@@ -229,83 +213,98 @@ export default {
         event.target.innerHTML = `${count}秒后重新获取`
         count -= 1
       }, 1000)
-      this.$api.post('/getCode', this.userRegister.phone).then(res => {
-        if (res.code === 200) {
+      // 获取验证码
+      this.$axios.getCode(this.userLogin.email).then(res => {
+        if (res.data.code === 200) {
           this.$message({
             message: '验证码已发送',
             type: 'success'
           })
-          console.log(res)
         } else {
           this.$message({
-            message: '未知错误',
-            type: 'error'
+            message: '发送失败',
+            type: 'warning'
           })
         }
       }).catch(err => {
         this.$message({
-          message: '获取失败' + err,
-          type: 'error',
-
+          message: '发送失败',
+          type: 'warning'
         })
       })
     },
     // 注册
     register() {
-      if (!this.checked.phoneOk || !this.checked.passwordOk || !this.checked.nickNameOk || !this.checked.confPasswordOk || !this.checked.phoneCodeOk) {
+      if (!this.checked.emailOk || !this.checked.passwordOk || !this.checked.confPasswordOk || !this.checked.emailCodeOk) {
         return this.$message({
           message: '请检查信息',
           type: 'warning'
         })
       }
-      this.$api.post('/register', this.userRegister).then(res => {
-        if (res.code === 200) {
-          this.$message({
-            message: '注册成功',
-            type: 'success'
-          })
-          window.localStorage.setItem('username', this.userRegister.registerUsername)
-          this.$router.push('/home')
-        } else {
-          this.$message({
-            message: '注册失败',
-            type: 'error'
+      // 注册的流程 --->  先向Node发送接口,看一下验证码是否正确
+      this.$axios.checkCode({
+        username: this.userRegister.email,
+        password: this.userRegister.registerPassword,
+        email: this.userRegister.email,
+        code: this.userRegister.emailCode
+      }).then(res => {
+        console.log(res)
+        if (res.data.code === 200) {
+          this.$axios.Login({
+            password: this.userRegister.registerPassword,
+            email: this.userRegister.email,
+          }).then(resu=>{
+            console.log(resu)
+            if(resu.code === 200){
+              window.localStorage.setItem('bestStudySession', resu.data)
+              this.$message({
+                message:"注册成功，即将为您自动登录",
+                type:'success'
+              })
+              setTimeout(()=>{
+                this.$router.push("/home")
+              },1000)
+            }else {
+              this.$message({
+                message:"登录失败",
+                type:'error'
+              })
+            }
           })
         }
       })
     },
     // 登录
     login() {
-      if (!this.checked.phoneOk || !this.checked.passwordOk) {
+      if (!this.checked.emailOk || !this.checked.passwordOk) {
         return this.$message({
-          message: '请检查手机号和密码',
+          message: '请检查邮箱和密码',
           type: 'warning'
         })
       }
-      this.$api.post('/login', this.userLogin).then(res => {
-        if (res.code === 200) {
+      this.$axios.Login(this.userLogin).then(res => {
+        console.log(res)
+        if(res.code === 200){
           this.$message({
             message: '登录成功',
             type: 'success'
           })
-          window.localStorage.setItem('session',res.data.session)
-          setTimeout(()=>{
+          window.localStorage.setItem('bestStudySession', res.data)
+          setTimeout(() => {
             this.$router.push('/home')
-          },1000)
-        } else if (res.code === 201) {
+          }, 1000)
+        }else{
           this.$message({
-            message: "账号名密码错误",
+            message: '未知错误' + res.msg,
             type: 'error'
-          })
-        } else {
-          this.$message({
-            message: '未知错误',
-            type: 'error'
-
           })
         }
+      }).catch(err => {
+        this.$message({
+          message: '未知错误' + err,
+          type: 'error'
+        })
       })
-
     },
   },
 };

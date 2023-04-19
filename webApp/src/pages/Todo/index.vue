@@ -41,12 +41,21 @@
           </div>
         </div>
         <div id="tasks">
-          <el-card class="box-card" v-for="(parent,index) in taskParentArr" :key="parent.id">
+          <el-card style='margin-bottom: 10px' class="box-card" v-for="(parent,index) in taskParentArr" :key="parent.id">
             <div slot="header" class="clearfix">
               <span>{{ parent.title }}</span>
-              <el-button icon="el-icon-delete" style="float: right;margin: 0 10px" size="mini" type="danger"
-                         circle></el-button>
-              <el-button icon="el-icon-plus" style="float: right;" size="mini" type="primary" circle
+              <template>
+                <el-popconfirm
+                    title="这是一段内容确定删除吗？"
+                    @confirm="deleteTask(index)"
+                >
+                  <el-button slot="reference" icon="el-icon-delete" style="float: right;" size="mini" type="danger" circle
+                            ></el-button>
+                </el-popconfirm>
+              </template>
+
+
+              <el-button icon="el-icon-plus" style="float: right;margin: 0 10px" size="mini" type="primary" circle
                          @click="taskShow(parent)"></el-button>
             </div>
             <div class="text item">
@@ -54,28 +63,25 @@
                   ref="multipleTable"
                   :data="parent.children"
                   @selection-change="handleSelectionChange"
-                  style="width: 100%">
+                  @select="selectChange"
+                  @select-all="(selection) => selectAll(selection, index)"
+                  style="width: 100%;">
                 <el-table-column
                     align="center"
                     type="selection"
-                    width="50">
+                    width="">
                 </el-table-column>
                 <el-table-column
                     align="center"
                     prop="title"
                     label="任务名"
-                    width="180">
+                    width="">
                 </el-table-column>
                 <el-table-column
                     align="center"
-                    prop="points"
+                    prop="point"
                     label="任务积分"
-                    width="180">
-                </el-table-column>
-                <el-table-column
-                    align="center"
-                    prop="totalTime"
-                    label="学习时间">
+                    width="">
                 </el-table-column>
               </el-table>
             </div>
@@ -124,7 +130,9 @@ export default {
   name: "index",
   data() {
     return {
+      i:0,
       totalTime: 0,
+
       // 今日积分
       points: 0,
       // 累计积分
@@ -136,12 +144,11 @@ export default {
       // 任务
       task: {
         id: 0,
-        user: '',
+        user_id: this.$store.state.user.userInfo.user_id,
         title: '',
-        isCheck: false,
+        isCheck: 0,
         totalTime: 0,
         count: 0,
-        date: (new Date).toLocaleDateString(),
         points: '',
         parentIndex: ''
       },
@@ -158,71 +165,160 @@ export default {
         totalPoints: 0,
         children: []
       },
-      parent: {}
+      parent: {},
+      currentTask:[]
     }
   },
-  mounted() {
+  async mounted() {
+    await this.$store.dispatch("getUser")
+    await this.getAllTasks()
     this.selectionChange()
   },
   methods: {
     // 添加任务
-    addTask() {
+    async addTask() {
       if (this.task.title === '' || this.task.points === '') {
         return this.$message({message: "请填写内容"})
       }
-      let task = JSON.parse(JSON.stringify(this.task))
-      this.parent.children.push(task)
-      window.localStorage.setItem("tasks", JSON.stringify(this.taskParentArr))
+      if (this.parent.children.length === 3) {
+        return this.$message({
+          message: '每个任务集最多创建三个任务'
+        })
+      }
+      let task = {
+        user_id: this.user_id,
+        title: this.task.title,
+        parentIndex: this.parent.id,
+        point: this.task.points
+      }
+      let result = await this.$axios.addTask(task)
+      if(result.data.code === 200){
+        this.$message({
+          message:"添加任务成功",
+          type:'success'
+        })
+      }
+      this.getAllTasks()
       this.addTaskShow = false
       this.task.title = ''
       this.task.points = ''
     },
+    // 展示添加任务
     taskShow(parent) {
       this.addTaskShow = true
       this.parent = parent
     },
-    addTaskArr() {
+    // 添加任务集
+    async addTaskArr() {
       if (this.taskParent.title.trim() === '') {
         return this.$message({
           message: '任务集名称不能为空'
         })
       }
-      // 设置id自增
-      this.taskParent.id = this.taskParentArr.length + 1
-      // 读取vuex中的用户名
-      this.taskParent.user = this.$store.state.user.userInfo.username
-      // 进行深拷贝
-      let taskParent = JSON.parse(JSON.stringify(this.taskParent))
-      // 将深拷贝后的结果添加到数组中
-      this.taskParentArr.push(taskParent)
-      // 进行持久化保存
-      window.localStorage.setItem("tasks", JSON.stringify(this.taskParentArr))
+      if(this.taskParentArr.length===3){
+        return this.$message({
+          message: '任务集最多创建三个'
+        })
+      }
+      let result = await this.$axios.addTaskSet({user_id: this.user_id, title:this.taskParent.title})
+      console.log(result)
+      if(result.data.code === 200){
+        this.$message({
+          message:'添加成功',
+          type:'success'
+        })
+        this.getAllTasks()
+      }else {
+        this.$message({
+          message:'添加失败',
+          type:'warning'
+        })
+      }
       // 关闭窗口
       this.addTaskArrShow = false
       // 清空内容
       this.taskParent.title = ''
 
     },
-    handleSelectionChange(val) {
-      val.forEach(item=>{
+    // 取消勾选的事件
+    handleSelectionChange(selection) {
+      if(selection.length >= this.currentTask.length){
+        this.currentTask = selection
+      }else {
+        var minus = this.currentTask.filter(function(v){ return selection.indexOf(v) === -1 })
+        minus.forEach(item=>{
+          item.isCheck = false
+        })
+        window.localStorage.setItem("tasks", JSON.stringify(this.taskParentArr))
+      }
+    },
+    // 勾选的事件
+    selectChange(selection,row){
+      // 遍历，给选中的每一个都添加isCheck：true
+      selection.forEach(item=>{
         item.isCheck = true
       })
       window.localStorage.setItem("tasks", JSON.stringify(this.taskParentArr))
     },
+    // 刚开始的如果有已经完成的，自动勾选
     selectionChange() {
       let tasks = window.localStorage.getItem("tasks")
       if (tasks) {
-        this.taskParentArr = JSON.parse(tasks)
         this.$nextTick(() => {
           this.taskParentArr.forEach(item => {
             item.children.forEach(child => {
-              if (child.isCheck === true) {
-                this.$refs.multipleTable[0].toggleRowSelection(child, true)
+              if (child.isCheck == 1) {
+                this.$refs.multipleTable.forEach(item=>{
+                  item.toggleRowSelection(child, true)
+                })
               }
             })
           })
         })
-
+      }
+    },
+    // 全部勾选的事件
+    selectAll(selection, index){
+      // 判断这两个的差集，如果差集为空的话，那就说明没有勾选，如果有差集，那么就说明全部勾选了
+      var minus = this.taskParentArr[index].children.filter(function(v){ return selection.indexOf(v) === -1 })
+      if(minus.length === 0){
+        this.taskParentArr[index].children.forEach(item=>{
+          item.isCheck = true
+        })
+        window.localStorage.setItem("tasks", JSON.stringify(this.taskParentArr))
+      }
+      else {
+        this.taskParentArr[index].children.forEach(item=>{
+          item.isCheck = false
+        })
+        window.localStorage.setItem("tasks", JSON.stringify(this.taskParentArr))
+      }
+    },
+    deleteTask(index){
+      this.taskParentArr.splice(index,1)
+      window.localStorage.setItem("tasks", JSON.stringify(this.taskParentArr))
+    },
+    // 获取全部的任务
+    async getAllTasks() {
+      let result = await this.$axios.getAllTask(this.user_id)
+      console.log(result.data)
+      if(result.data.code === 200){
+        if(result.data.data.length === 0){
+          return this.$message({
+            message:"还没有任务集呢，快去创建把",
+            type:'warning'
+          })
+        }
+        this.$message({
+          message:"获取成功",
+          type:'success'
+        })
+        this.taskParentArr = result.data.data
+      }else {
+        this.$message({
+          message:"出现了某些错误，请稍后再试",
+          type:'danger'
+        })
       }
     }
   },
@@ -246,6 +342,9 @@ export default {
         })
       })
       return total
+    },
+    user_id() {
+      return this.$store.state.user.userInfo.id
     }
   }
 }
@@ -254,10 +353,9 @@ export default {
 <style scoped lang="less">
 #todo {
   width: 100%;
-  height: 80%;
+  height: 100%;
   padding: 0;
   overflow-y: unset;
-
 }
 
 // 任务总览
@@ -285,8 +383,9 @@ export default {
 #task {
   #tasks {
     width: 95%;
-    height:500px;
-    margin: 0 auto;
+    height:0;
+
+    margin: 0 auto 400px auto;
   }
 
   #handleTitle {

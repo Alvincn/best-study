@@ -9,11 +9,10 @@ import 'element-ui/lib/theme-chalk/index.css';
 import Api from '@/api/index.js';
 // 引入mockAjax
 import mockAjax from "@/api/mockAjax";
-// 提取elementUI message
+// 这个是发送请求api
 Vue.prototype.$axios = Api;
+// mock接口
 Vue.prototype.$api = mockAjax
-// 引入mockjs 进行数据模拟
-import '@/mock/index'
 // 引入路由
 import router from './router';
 Vue.config.productionTip = false;

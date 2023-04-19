@@ -1,6 +1,6 @@
 <template>
   <div id="home">
-    <tab-bar :userInfo="userInfo"></tab-bar>
+    <tab-bar :userInfo="this.$store.state.user.userInfo"></tab-bar>
   </div>
 </template>
 
@@ -10,8 +10,7 @@ import tabBar from "@/components/tabBar/tabBar";
 export default {
   name: 'Home',
   async mounted() {
-    await this.$store.dispatch('getUser', window.localStorage.getItem('session'))
-    this.userInfo =  this.$store.state.user.userInfo
+    await this.$store.dispatch("getUser")
   },
   components: {tabBar},
   data() {

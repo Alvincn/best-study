@@ -24,12 +24,7 @@ export default [
         path: '/login',
         name: 'Login',
         component: () => import('@/pages/Login'),
-    },
-    {
-        path: '/register',
-        name: 'Register',
-        component: () => import('@/pages/Register'),
-    },
+    }
 
 ]
 
