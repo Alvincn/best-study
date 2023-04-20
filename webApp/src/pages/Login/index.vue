@@ -36,8 +36,8 @@
           <el-form-item label="邮箱" prop="email">
             <el-input placeholder="请输入邮箱" type="text" v-model="userRegister.email"></el-input>
           </el-form-item>
-          <el-form-item label="密码" prop="registerPassword">
-            <el-input placeholder="请输入密码（包含大写、小写、数字）" type="password" v-model="userRegister.registerPassword"
+          <el-form-item label="密码" prop="password">
+            <el-input placeholder="请输入密码（包含大写、小写、数字）" type="password" v-model="userRegister.password"
                       show-password></el-input>
           </el-form-item>
           <el-form-item label="确认密码" prop="confirmPassword">
@@ -100,7 +100,7 @@ export default {
         this.checked.confPasswordOk = false
         return callback(new Error('请再次输入密码'))
       }
-      if (this.userRegister.registerPassword.trim() !== value) {
+      if (this.userRegister.password.trim() !== value) {
         this.checked.confPasswordOk = false
         return callback(new Error('两次密码输入不一致'))
       }
@@ -137,7 +137,7 @@ export default {
         // 注册用户名
         registerUsername: '',
         // 注册密码
-        registerPassword: '',
+        password: '',
         // 确认密码
         confirmPassword: '',
         // 邮箱
@@ -214,7 +214,7 @@ export default {
         count -= 1
       }, 1000)
       // 获取验证码
-      this.$axios.getCode(this.userLogin.email).then(res => {
+      this.$axios.getCode(this.userRegister.email).then(res => {
         if (res.data.code === 200) {
           this.$message({
             message: '验证码已发送',
@@ -244,14 +244,14 @@ export default {
       // 注册的流程 --->  先向Node发送接口,看一下验证码是否正确
       this.$axios.checkCode({
         username: this.userRegister.email,
-        password: this.userRegister.registerPassword,
+        password: this.userRegister.password,
         email: this.userRegister.email,
         code: this.userRegister.emailCode
       }).then(res => {
         console.log(res)
         if (res.data.code === 200) {
           this.$axios.Login({
-            password: this.userRegister.registerPassword,
+            password: this.userRegister.password,
             email: this.userRegister.email,
           }).then(resu=>{
             console.log(resu)
@@ -283,7 +283,6 @@ export default {
         })
       }
       this.$axios.Login(this.userLogin).then(res => {
-        console.log(res)
         if(res.code === 200){
           this.$message({
             message: '登录成功',

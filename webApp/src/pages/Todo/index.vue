@@ -1,6 +1,6 @@
 <template>
   <div id="todo">
-    <div>
+    <div v-show="!timerCompentShow">
       <div id="title">
         <span style="font-size: 25px">今天（{{ (new Date).toLocaleDateString() }}）</span>
         <div id="totalTask">
@@ -41,22 +41,27 @@
           </div>
         </div>
         <div id="tasks">
-          <el-card style='margin-bottom: 10px' class="box-card" v-for="(parent,index) in taskParentArr" :key="parent.id">
+          <el-card style='margin-bottom: 10px' class="box-card" v-for="(parent,index) in taskParentArr"
+                   :key="parent.id">
             <div slot="header" class="clearfix">
               <span>{{ parent.title }}</span>
+
               <template>
                 <el-popconfirm
                     title="这是一段内容确定删除吗？"
                     @confirm="deleteTask(index)"
                 >
-                  <el-button slot="reference" icon="el-icon-delete" style="float: right;" size="mini" type="danger" circle
-                            ></el-button>
+                  <el-button slot="reference" icon="el-icon-delete" style="float: right;" size="mini" type="danger"
+                             circle
+                  ></el-button>
                 </el-popconfirm>
               </template>
 
 
               <el-button icon="el-icon-plus" style="float: right;margin: 0 10px" size="mini" type="primary" circle
                          @click="taskShow(parent)"></el-button>
+              <el-button icon="el-icon-video-play" style="float: right;" size="mini" type="success" circle
+                         @click="timerShow(parent)"></el-button>
             </div>
             <div class="text item">
               <el-table
@@ -89,6 +94,9 @@
         </div>
 
       </div>
+    </div>
+    <div v-show="timerCompentShow">
+      <timerCompent></timerCompent>
     </div>
     <!--  新增任务  -->
     <el-dialog title="新增任务" :visible.sync="addTaskShow">
@@ -126,15 +134,19 @@
 
 
 <script>
+import timerCompent from "@/components/timerCompent/timerCompent";
 export default {
   name: "index",
   data() {
     return {
-      i:0,
+      // 已专注时间
       totalTime: 0,
-
+      // 已完成任务
+      complete: 0,
+      // 未完成任务
+      rest: 0,
       // 今日积分
-      points: 0,
+      // points: 0,
       // 累计积分
       totalPoints: 0,
       // 新增任务
@@ -166,13 +178,19 @@ export default {
         children: []
       },
       parent: {},
-      currentTask:[]
+      currentTask: [],
+      charge: true,
+      timerCompentShow:false
     }
   },
   async mounted() {
     await this.$store.dispatch("getUser")
     await this.getAllTasks()
     this.selectionChange()
+    this.getTotal()
+    this.$bus.$on("closeTimer",()=>{
+      this.timerCompentShow = false
+    })
   },
   methods: {
     // 添加任务
@@ -192,13 +210,14 @@ export default {
         point: this.task.points
       }
       let result = await this.$axios.addTask(task)
-      if(result.data.code === 200){
+      this.rest += 1
+      if (result.data.code === 200) {
         this.$message({
-          message:"添加任务成功",
-          type:'success'
+          message: "添加任务成功",
+          type: 'success'
         })
       }
-      this.getAllTasks()
+      await this.getAllTasks()
       this.addTaskShow = false
       this.task.title = ''
       this.task.points = ''
@@ -215,23 +234,22 @@ export default {
           message: '任务集名称不能为空'
         })
       }
-      if(this.taskParentArr.length===3){
+      if (this.taskParentArr.length === 3) {
         return this.$message({
           message: '任务集最多创建三个'
         })
       }
-      let result = await this.$axios.addTaskSet({user_id: this.user_id, title:this.taskParent.title})
-      console.log(result)
-      if(result.data.code === 200){
+      let result = await this.$axios.addTaskSet({user_id: this.user_id, title: this.taskParent.title})
+      if (result.data.code === 200) {
         this.$message({
-          message:'添加成功',
-          type:'success'
+          message: '添加成功',
+          type: 'success'
         })
-        this.getAllTasks()
-      }else {
+        await this.getAllTasks()
+      } else {
         this.$message({
-          message:'添加失败',
-          type:'warning'
+          message: '添加失败',
+          type: 'warning'
         })
       }
       // 关闭窗口
@@ -241,24 +259,28 @@ export default {
 
     },
     // 取消勾选的事件
-    handleSelectionChange(selection) {
-      if(selection.length >= this.currentTask.length){
+    async handleSelectionChange(selection) {
+      if (selection.length >= this.currentTask.length) {
         this.currentTask = selection
-      }else {
-        var minus = this.currentTask.filter(function(v){ return selection.indexOf(v) === -1 })
-        minus.forEach(item=>{
-          item.isCheck = false
+      } else {
+        var minus = this.currentTask.filter(function (v) {
+          return selection.indexOf(v) === -1
         })
-        window.localStorage.setItem("tasks", JSON.stringify(this.taskParentArr))
+        let result = await this.$axios.updateCheck({isCheck: 0, tasks: minus})
+        if (result.data.code === 200) {
+          this.charge = true
+          this.rest += 1
+          this.complete -= 1
+        }
       }
     },
     // 勾选的事件
-    selectChange(selection,row){
-      // 遍历，给选中的每一个都添加isCheck：true
-      selection.forEach(item=>{
-        item.isCheck = true
-      })
-      window.localStorage.setItem("tasks", JSON.stringify(this.taskParentArr))
+    async selectChange(selection, row) {
+      if (selection.length >= this.currentTask.length) {
+        this.complete += 1
+        this.rest -= 1
+        await this.$axios.updateCheck({isCheck: 1, tasks: selection})
+      }
     },
     // 刚开始的如果有已经完成的，自动勾选
     selectionChange() {
@@ -268,7 +290,7 @@ export default {
           this.taskParentArr.forEach(item => {
             item.children.forEach(child => {
               if (child.isCheck == 1) {
-                this.$refs.multipleTable.forEach(item=>{
+                this.$refs.multipleTable.forEach(item => {
                   item.toggleRowSelection(child, true)
                 })
               }
@@ -278,74 +300,90 @@ export default {
       }
     },
     // 全部勾选的事件
-    selectAll(selection, index){
+    selectAll: async function (selection, index) {
       // 判断这两个的差集，如果差集为空的话，那就说明没有勾选，如果有差集，那么就说明全部勾选了
-      var minus = this.taskParentArr[index].children.filter(function(v){ return selection.indexOf(v) === -1 })
-      if(minus.length === 0){
-        this.taskParentArr[index].children.forEach(item=>{
-          item.isCheck = true
-        })
-        window.localStorage.setItem("tasks", JSON.stringify(this.taskParentArr))
-      }
-      else {
-        this.taskParentArr[index].children.forEach(item=>{
-          item.isCheck = false
-        })
-        window.localStorage.setItem("tasks", JSON.stringify(this.taskParentArr))
+      var minus = this.taskParentArr[index].children.filter(function (v) {
+        return selection.indexOf(v) === -1
+      })
+      // 说明全部勾选
+      if (minus.length === 0) {
+        await this.$axios.updateCheck({isCheck: 1, tasks: this.taskParentArr[index].children})
+        this.complete += this.taskParentArr[index].children.length
+        this.rest -= this.taskParentArr[index].children.length
+      } else {
+        // 没有一个勾选
+        await this.$axios.updateCheck({isCheck: 0, tasks: minus})
+        this.complete -= minus.length
+        this.rest += minus.length
+
       }
     },
-    deleteTask(index){
-      this.taskParentArr.splice(index,1)
-      window.localStorage.setItem("tasks", JSON.stringify(this.taskParentArr))
+    // 删除任务
+    deleteTask: async function (index) {
+      let result = await this.$axios.deleteTaskSet(this.taskParentArr[index])
+      if (result.data.code === 200) {
+        this.$message({
+          message: "删除成功",
+          type: 'success'
+        })
+        await this.getAllTasks()
+      }
     },
     // 获取全部的任务
     async getAllTasks() {
       let result = await this.$axios.getAllTask(this.user_id)
-      console.log(result.data)
-      if(result.data.code === 200){
-        if(result.data.data.length === 0){
+      if (result.data.code === 200) {
+        if (result.data.data.length === 0) {
+          this.taskParentArr = []
           return this.$message({
-            message:"还没有任务集呢，快去创建把",
-            type:'warning'
+            message: "还没有任务集呢，快去创建把",
+            type: 'warning'
           })
         }
-        this.$message({
-          message:"获取成功",
-          type:'success'
-        })
         this.taskParentArr = result.data.data
-      }else {
-        this.$message({
-          message:"出现了某些错误，请稍后再试",
-          type:'danger'
+        this.selectionChange()
+      } else {
+        return this.$message({
+          message: "出现了某些错误，请稍后再试",
+          type: 'danger'
         })
       }
+    },
+    getTotal() {
+      this.taskParentArr.forEach(item => {
+        item.children.forEach(child => {
+          if (child.isCheck === 1) {
+            this.complete += 1
+          } else {
+            this.rest += 1
+          }
+        })
+      })
+    },
+    timerShow(parent) {
+      this.timerCompentShow = true
+      this.parent = parent
+      this.$bus.$emit('clear',parent);
     }
   },
   computed: {
-    // 已完成
-    complete() {
-      let total = 0
-      this.taskParentArr.forEach(item => {
-        item.children.forEach(child => {
-          child.isCheck === true ? total += 1 : null;
-        })
-      })
-      return total
-    },
-    // 未完成
-    rest() {
-      let total = 0
-      this.taskParentArr.forEach(item => {
-        item.children.forEach(child => {
-          child.isCheck === false ? total += 1 : null;
-        })
-      })
-      return total
-    },
     user_id() {
       return this.$store.state.user.userInfo.id
+    },
+    points() {
+      let total = 0
+      this.taskParentArr.forEach(item => {
+        item.children.forEach(child => {
+          if (child.isCheck === 1) {
+            total += child.point
+          }
+        })
+      })
+      return total
     }
+  },
+  components: {
+    timerCompent
   }
 }
 </script>
@@ -383,7 +421,7 @@ export default {
 #task {
   #tasks {
     width: 95%;
-    height:0;
+    height: 0;
 
     margin: 0 auto 400px auto;
   }

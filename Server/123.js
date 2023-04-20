@@ -1,6 +1,6 @@
-let arr = [];
-let arr1 = [1, 2, 3, 4];
-arr1.forEach((item) => {
-  arr.push(item);
-});
-console.log(arr);
+arr = [1, 2, 3];
+arr1 = 2;
+console.log(arr.length);
+if (arr.length) {
+  console.log(222);
+}

@@ -7,7 +7,8 @@ import {request, nodeRequest, mockRequest} from "@/api/methods";
 export default {
     // 登录
     Login: (user) => {
-        return request.Post('/user/login', {email: user.email, password: user.password, code: 'null'});
+        console.log({email: user.email, password: user.password, code: 'null'})
+        return request.Post('/user/login', {email: user.email, password: user.password, code: "null"});
     },
     // 验证验证码是否正确
     checkCode: (user) => {
@@ -39,15 +40,27 @@ export default {
         return nodeRequest.Post('/addTask', task)
     },
     // 获取指定日期的任务 data{date:,user_id:}
-    getTask:(date,user_id) =>{
-        return nodeRequest.Get('/getTask',{date,user_id})
+    getTask: (date, user_id) => {
+        return nodeRequest.Get('/getTask', {date, user_id})
     },
     // 获取任务集 data{user_id}
-    getTaskSet:(user_id) => {
-        return nodeRequest.Get('/getTaskSet',{user_id})
+    getTaskSet: (user_id) => {
+        return nodeRequest.Get('/getTaskSet', {user_id})
     },
     // 获取今天的任务和任务集
-    getAllTask:(user_id) =>{
-        return nodeRequest.Get('/getAllTask',{user_id})
+    getAllTask: (user_id) => {
+        return nodeRequest.Get('/getAllTask', {user_id})
     },
+    // 更新勾选状态
+    updateCheck: (data) => {
+        return nodeRequest.Post('/updateCheck',data)
+    },
+    // 删除任务集
+    deleteTaskSet: (taskSet) => {
+        return nodeRequest.Post('/deleteTaskSet',taskSet)
+    },
+    // 插入学习记录
+    insertStudyRecord: (taskset) => {
+        return nodeRequest.Post('/insertStudyRecord',taskset)
+    }
 };
